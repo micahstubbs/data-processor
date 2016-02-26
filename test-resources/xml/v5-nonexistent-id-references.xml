@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<VipObject schemaVersion="5.0">
+  <Candidate id="can10861a">
+    <BallotName>
+      <Text>Barack H. Obama</Text>
+    </BallotName>
+    <PartyId>par0003</PartyId> <!-- xs:IDREF -->
+    <PersonId>per10861a</PersonId>  <!-- xs:IDREF -->
+  </Candidate>
+
+  <Person id="per10861a">
+    <FirstName>Barack</FirstName>
+    <PartyId>par0003</PartyId>  <!-- xs:IDREF -->
+  </Person>
+
+  <Party id="par0002">
+    <Abbreviation>DEM</Abbreviation>
+  </Party>
+</VipObject>

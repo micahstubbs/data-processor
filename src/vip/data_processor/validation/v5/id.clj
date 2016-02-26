@@ -58,3 +58,7 @@
                  (update-in ctx [:fatal :id (.getValue path) :missing]
                             conj :missing-id))
                ctx)))
+
+(defn validate-id-references
+  [{:keys [import-id] :as ctx}]
+  {:blue 42})

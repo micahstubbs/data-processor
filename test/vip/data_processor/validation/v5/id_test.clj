@@ -37,3 +37,17 @@
       (is (get-in out-ctx [:fatal :id "VipObject.0.Person.2.id" :missing])))
     (testing "doesn't for those that aren't"
       (is (not (get-in out-ctx [:fatal :id "VipObject.0.Person.1.id" :missing]))))))
+
+(deftest ^:postgres validate-id-references-test
+  (let [ctx {:input (xml-input "v5-nonexistent-id-references.xml")
+             :pipeline [psql/start-run
+                        load-xml-ltree
+                        v5.id/validate-id-references]}
+        out-ctx (pipeline/run-pipeline ctx)]
+
+    (testing "when a referent is missing, we have a problem"
+      (is (get-in out-ctx [:error :id "VipObject.0.Person.0.id" :referent-missing]))
+      (is (get-in out-ctx [:error :id "VipObject.0.Person.2.id" :referent-missing])))
+
+    (testing "when a referent exists, we have no problem"
+      (is (not (get-in out-ctx [:error :id "VipObject.0.Person.1.id" :referent-missing]))))))
