@@ -26,4 +26,6 @@
     (is (not (get-in out-ctx [:errors :street-segments 25 :overlaps])))
     (is (not (get-in out-ctx [:errors :street-segments 26 :overlaps])))
     (is (= '(28) (get-in out-ctx [:errors :street-segments 27 :overlaps])))
+    (is (not (get-in out-ctx [:errors :street-segments 29 :overlaps])))
+    (is (not (get-in out-ctx [:errors :street-segments 30 :overlaps])))
     (assert-error-format out-ctx)))
