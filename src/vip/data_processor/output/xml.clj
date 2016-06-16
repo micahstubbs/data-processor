@@ -19,7 +19,8 @@
             [clojure.java.io :as io]
             [clojure.walk :as walk]
             [com.climate.newrelic.trace :refer [defn-traced]]
-            [vip.data-processor.output.v3-0.xml :as v3-0])
+            [vip.data-processor.output.v3-0.xml :as v3-0]
+            [vip.data-processor.output.xml-helpers :refer [create-xml-file]])
   (:import [java.nio.file Files]
            [java.nio.file.attribute FileAttribute]
            [javax.xml XMLConstants]
@@ -27,12 +28,6 @@
            [javax.xml.validation SchemaFactory]
            [org.xml.sax SAXParseException]
            [org.apache.commons.lang StringEscapeUtils]))
-
-(defn create-xml-file [{:keys [filename] :as ctx}]
-  (let [xml-file (Files/createTempFile filename ".xml" (into-array FileAttribute []))]
-    (-> ctx
-        (assoc :xml-output-file xml-file)
-        (update :to-be-cleaned conj xml-file))))
 
 (def ^:const SPACE " ")
 (def ^:const OPEN-VALUE "=\"")

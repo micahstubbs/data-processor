@@ -1,6 +1,7 @@
 (ns vip.data-processor.output.tree-xml
   (:require [clojure.data.xml :as xml]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [vip.data-processor.output.xml-helpers :refer [create-xml-file]])
   (:import [java.nio.file Files]
            [java.nio.file.attribute FileAttribute]
            [org.apache.commons.lang StringEscapeUtils]))
@@ -160,13 +161,6 @@
         (when @inside-open-tag
           (.write f ">"))
         (.write f (apply str (map closing-tag to-close)))))))
-
-;;; copied from output/xml.clj, TODO: move it somehwere shared
-(defn create-xml-file [{:keys [filename] :as ctx}]
-  (let [xml-file (Files/createTempFile filename ".xml" (into-array FileAttribute []))]
-    (-> ctx
-        (assoc :xml-output-file xml-file)
-        (update :to-be-cleaned conj xml-file))))
 
 (defn generate-xml-file [{:keys [spec-version import-id xml-output-file] :as ctx}]
   (write-xml xml-output-file spec-version import-id)

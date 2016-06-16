@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [vip.data-processor.test-helpers :refer :all]
             [vip.data-processor.output.xml :refer :all]
+            [vip.data-processor.output.xml-helpers :refer [create-xml-file]]
             [vip.data-processor.db.sqlite :as sqlite]
             [vip.data-processor.pipeline :as pipeline]
             [vip.data-processor.validation.csv :as csv]
