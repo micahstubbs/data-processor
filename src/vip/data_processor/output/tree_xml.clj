@@ -123,7 +123,8 @@
       (doseq [{:keys [path value simple_path] :as row}
               (db.util/select-lazy 1000
                                    postgres/xml-tree-values
-                                   (korma/where {:results_id import-id}))]
+                                   (korma/where {:results_id import-id})
+                                   (korma/order :insert_counter :ASC))]
         (let [path (.getValue path)
               simple_path (.getValue simple_path)
               escaped-value (StringEscapeUtils/escapeXml value)]
