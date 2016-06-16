@@ -9,34 +9,6 @@
            [java.nio.file.attribute FileAttribute]
            [org.apache.commons.lang StringEscapeUtils]))
 
-(def rows [{:path "VipObject.0.Candidate.0.id"
-            :simple_path "VipObject.Candidate.id"
-            :value "can001"}
-           {:path "VipObject.0.Candidate.0.Name.0"
-            :simple_path "VipObject.Candidate.Name"
-            :value "Frank"}
-           {:path "VipObject.0.Candidate.0.Party.1"
-            :simple_path "VipObject.Candidate.Party"
-            :value "Every day"}
-           {:path "VipObject.0.Candidate.0.Title.2.Text.0.language"
-            :simple_path "VipObject.Candidate.Title.Text.language"
-            :value "en"}
-           {:path "VipObject.0.Candidate.0.Title.2.Text.0"
-            :simple_path "VipObject.Candidate.Title.Text"
-            :value "President"}
-           {:path "VipObject.0.Candidate.0.Title.2.Text.1.language"
-            :simple_path "VipObject.Candidate.Title.Text.language"
-            :value "es"}
-           {:path "VipObject.0.Candidate.0.Title.2.Text.1"
-            :simple_path "VipObject.Candidate.Title.Text"
-            :value "\"El\" Presidente"}
-           {:path "VipObject.0.Candidate.0.Nickname.3"
-            :simple_path "VipObject.Candidate.Nickname"
-            :value "> Ezra"}
-           {:path "VipObject.0.Contest.1.id"
-            :simple_path "VipObject.Contest.id"
-            :value "con001"}])
-
 (defn attr
   "Return the attribute of a path, if there is one."
   [path]
@@ -107,14 +79,6 @@
                    (drop (count shared-prefix))
                    (map tag-without-index))}))
 
-;;; TODO: clean this up!
-;;; TODO: tests!
-;;; TODO: add autoincrement column to xml_tree_values
-;;; DONE: pull the values from the db (lazily!)
-;;; DONE: make a processing fn for this
-;;; DONE: set schemaVersion from version of ctx
-;;; DONE: create the file as a tempfile
-;;; DONE: Add output file to ctx as :xml-output-file
 (defn write-xml [file spec-version import-id]
   (with-open [f (io/writer (.toFile file))]
     (.write f (str "<?xml version=\"1.0\"?>\n<VipObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" schemaVersion=\"" spec-version "\" xsi:noNamespaceSchemaLocation=\"http://votinginfoproject.github.com/vip-specification/vip_spec.xsd\">\n"))
