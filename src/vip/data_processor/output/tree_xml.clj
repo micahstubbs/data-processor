@@ -1,7 +1,10 @@
 (ns vip.data-processor.output.tree-xml
   (:require [clojure.data.xml :as xml]
             [clojure.java.io :as io]
-            [vip.data-processor.output.xml-helpers :refer [create-xml-file]])
+            [korma.core :as korma]
+            [vip.data-processor.output.xml-helpers :refer [create-xml-file]]
+            [vip.data-processor.db.postgres :as postgres]
+            [vip.data-processor.db.util :as db.util])
   (:import [java.nio.file Files]
            [java.nio.file.attribute FileAttribute]
            [org.apache.commons.lang StringEscapeUtils]))
@@ -107,7 +110,7 @@
 ;;; TODO: clean this up!
 ;;; TODO: tests!
 ;;; TODO: add autoincrement column to xml_tree_values
-;;; TODO: pull the values from the db (lazily!)
+;;; DONE: pull the values from the db (lazily!)
 ;;; DONE: make a processing fn for this
 ;;; DONE: set schemaVersion from version of ctx
 ;;; DONE: create the file as a tempfile
@@ -117,15 +120,13 @@
     (.write f (str "<?xml version=\"1.0\"?>\n<VipObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" schemaVersion=\"" spec-version "\" xsi:noNamespaceSchemaLocation=\"http://votinginfoproject.github.com/vip-specification/vip_spec.xsd\">\n"))
     (let [last-seen-path (atom "VipObject.0")
           inside-open-tag (atom false)]
-      (doseq [{:keys [path value simple_path] :as row} rows] ; TODO: query for the rows using the import-id.
-                                                             ; And yes do it here so we're not holding a reference
-                                                             ; to what's going to be a very large lazy seq.
-                                                             ; See vip.data-processor.db.util/select-*-lazily for
-                                                             ; inspriation on how to select a ton of rows from a
-                                                             ; table lazily... Sadly, it won't work as written,
-                                                             ; because there's no WHERE clause in it... but perhaps
-                                                             ; another arity can be added.
-        (let [escaped-value (StringEscapeUtils/escapeXml value)]
+      (doseq [{:keys [path value simple_path] :as row}
+              (db.util/select-lazy 1000
+                                   postgres/xml-tree-values
+                                   (korma/where {:results_id import-id}))]
+        (let [path (.getValue path)
+              simple_path (.getValue simple_path)
+              escaped-value (StringEscapeUtils/escapeXml value)]
           (if-let [attribute (attr path)]
             (do
               (if @inside-open-tag
@@ -155,8 +156,8 @@
                 (.write f (apply str (map closing-tag to-close)))
                 (.write f (apply str (map opening-tag to-open)))
                 (.write f escaped-value))
-              (reset! inside-open-tag false))))
-        (reset! last-seen-path path))
+              (reset! inside-open-tag false)))
+          (reset! last-seen-path path)))
       (let [{:keys [to-close]} (to-close-and-to-open @last-seen-path "")]
         (when @inside-open-tag
           (.write f ">"))
