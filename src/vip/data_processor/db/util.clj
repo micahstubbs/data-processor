@@ -143,22 +143,7 @@
                                   [message]))))))))
           ctx (chunk-rows rows statement-parameter-limit)))
 
-(defn select-*-lazily [chunk-size sql-table]
-  (let [total (-> sql-table
-                  (korma/select (korma/aggregate (count "*") :total))
-                  first
-                  :total)]
-    (letfn [(chunked-rows [page]
-              (let [offset (* page chunk-size)]
-                (when (< offset total)
-                  (lazy-cat
-                   (korma/select sql-table
-                                 (korma/offset offset)
-                                 (korma/limit chunk-size))
-                   (chunked-rows (inc page))))))]
-      (chunked-rows 0))))
-
-(defmacro select-lazy
+(defmacro lazy-select
   [chunk-size sql-table & body]
   `(letfn [(chunked-rows# [page#]
              (let [offset# (* page# ~chunk-size)
