@@ -64,6 +64,7 @@
              :import-id import-id
              :pipeline pipeline}
         out-ctx (pipeline/run-pipeline ctx)]
+    (assert-no-problems out-ctx [])
     (is (= (-> out-ctx
                :xml-output-file
                .toFile
