@@ -79,6 +79,15 @@
                    (drop (count shared-prefix))
                    (map tag-without-index))}))
 
+(defn map-str [f]
+  (fn [coll]
+    (->> coll
+         (map f)
+         (apply str))))
+
+(def opening-tags (map-str opening-tag))
+(def closing-tags (map-str closing-tag))
+
 (defn write-xml [file spec-version import-id]
   (with-open [f (io/writer (.toFile file))]
     (.write f (str "<?xml version=\"1.0\"?>\n<VipObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" schemaVersion=\"" spec-version "\" xsi:noNamespaceSchemaLocation=\"http://votinginfoproject.github.com/vip-specification/vip_spec.xsd\">\n"))
@@ -102,15 +111,15 @@
                         last-tag (last to-open)
                         tags-to-open (butlast to-open)]
                     (.write f ">")
-                    (.write f (apply str (map closing-tag to-close)))
-                    (.write f (apply str (map opening-tag tags-to-open)))
+                    (.write f (closing-tags to-close))
+                    (.write f (opening-tags tags-to-open))
                     (.write f (str "<" last-tag " " attribute "=\"" escaped-value "\""))))
                 (let [{:keys [to-close
                               to-open]} (to-close-and-to-open @last-seen-path path)
                       last-tag (last to-open)
                       tags-to-open (butlast to-open)]
-                  (.write f (apply str (map closing-tag to-close)))
-                  (.write f (apply str (map opening-tag tags-to-open)))
+                  (.write f (closing-tags to-close))
+                  (.write f (opening-tags tags-to-open))
                   (.write f (str "<" last-tag " " attribute "=\"" escaped-value "\""))))
               (reset! inside-open-tag true))
             (do
@@ -118,15 +127,15 @@
                 (.write f ">"))
               (let [{:keys [to-close
                             to-open]} (to-close-and-to-open @last-seen-path path)]
-                (.write f (apply str (map closing-tag to-close)))
-                (.write f (apply str (map opening-tag to-open)))
+                (.write f (closing-tags to-close))
+                (.write f (opening-tags to-open))
                 (.write f escaped-value))
               (reset! inside-open-tag false)))
           (reset! last-seen-path path)))
       (let [{:keys [to-close]} (to-close-and-to-open @last-seen-path "")]
         (when @inside-open-tag
           (.write f ">"))
-        (.write f (apply str (map closing-tag to-close)))))))
+        (.write f (closing-tags to-close))))))
 
 (defn generate-xml-file [{:keys [spec-version import-id xml-output-file] :as ctx}]
   (write-xml xml-output-file spec-version import-id)
