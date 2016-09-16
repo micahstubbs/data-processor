@@ -2,7 +2,8 @@
   (:require [korma.core :as korma]
             [vip.data-processor.db.postgres :as postgres]
             [vip.data-processor.validation.fips :as fips]
-            [vip.data-processor.validation.v5.util :as util]))
+            [vip.data-processor.validation.v5.util :as util]
+            [vip.data-processor.errors :as errors]))
 
 (defn validate-one-source [{:keys [import-id] :as ctx}]
   (let [result (korma/exec-raw
@@ -16,8 +17,8 @@
                          first
                          :source_count)]
     (if (> source-count 1)
-      (update-in ctx [:fatal :source "VipObject.0.Source" :count]
-                 conj :more-than-one)
+      (errors/add-errors ctx :fatal :source "VipObject.0.Source" :count
+                         :more-than-one)
       ctx)))
 
 (def validate-name
@@ -63,7 +64,7 @@
                                 :simple_path simple-path}))
         invalid-vip-ids (remove (comp fips/valid-fips? :value) vip-ids)]
     (reduce (fn [ctx row]
-              (update-in ctx
-                         [:critical :source (-> row :path .getValue) :invalid-fips]
-                         conj (:value row)))
+              (errors/add-errors ctx
+                                 :critical :source (-> row :path .getValue) :invalid-fips
+                                 (:value row)))
             ctx invalid-vip-ids)))

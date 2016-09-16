@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [vip.data-processor.test-helpers :refer :all]
             [vip.data-processor.validation.xml :refer :all]
+            [clojure.core.async :as a]
             [clojure.data.xml :as data.xml]
             [vip.data-processor.validation.data-spec :as data-spec]
             [vip.data-processor.validation.data-spec.v3-0 :as v3-0]
@@ -108,38 +109,54 @@
           (is (= [{:locality_id 101 :early_vote_site_id 30203}]
                  locality-early-vote-sites))))))
   (testing "adds errors for non-UTF-8 data"
-    (let [ctx (merge {:input (xml-input "non-utf-8.xml")
+    (let [errors-chan (a/chan 100)
+          ctx (merge {:input (xml-input "non-utf-8.xml")
                       :data-specs v3-0/data-specs
+                      :errors-chan errors-chan
                       :pipeline [load-xml]}
                      (sqlite/temp-db "non-utf-8" "3.0"))
-          out-ctx (pipeline/run-pipeline ctx)]
-      (is (= (get-in out-ctx [:errors :candidates "90001" "name"])
-             ["Is not valid UTF-8."]))
-      (assert-error-format out-ctx)))
+          out-ctx (pipeline/run-pipeline ctx)
+          errors (all-errors errors-chan)]
+      (is (contains-error? errors
+                           {:severity :errors
+                            :scope :candidates
+                            :identifier "90001"
+                            :error-type "name"
+                            :error-value "Is not valid UTF-8."}))))
   (testing "can continue after reaching malformed XML"
-    (let [ctx (merge {:input (xml-input "malformed.xml")
+    (let [errors-chan (a/chan 100)
+          ctx (merge {:input (xml-input "malformed.xml")
                       :data-specs v3-0/data-specs
+                      :errors-chan errors-chan
                       :pipeline [load-xml]}
                      (sqlite/temp-db "malformed-xml" "3.0"))
-          out-ctx (pipeline/run-pipeline ctx)]
-      (is (get-in out-ctx [:critical :import :global :malformed-xml]))
+          out-ctx (pipeline/run-pipeline ctx)
+          errors (all-errors errors-chan)]
+      (is (contains-error? errors
+                           {:severity :critical
+                            :scope :import
+                            :identifier :global
+                            :error-type :malformed-xml}))
       (testing "but still loads data before the malformation!"
         (is (= [{:id 39 :name "Ohio" :election_administration_id 3456}]
-               (korma/select (get-in out-ctx [:tables :states])))))
-      (assert-error-format out-ctx))))
+               (korma/select (get-in out-ctx [:tables :states]))))))))
 
 (deftest full-good-run-test
   (testing "a good XML file produces no erorrs or warnings"
-    (let [ctx (merge {:input (xml-input "full-good-run.xml")
+    (let [errors-chan (a/chan 100)
+          ctx (merge {:input (xml-input "full-good-run.xml")
                       :data-specs v3-0/data-specs
+                      :errors-chan errors-chan
+                      :spec-version (atom nil)
                       :pipeline (concat [determine-spec-version
                                          branch-on-spec-version]
                                         db/validations)}
                      (sqlite/temp-db "full-good-xml" "3.0"))
-          out-ctx (pipeline/run-pipeline ctx)]
+          out-ctx (pipeline/run-pipeline ctx)
+          errors (all-errors errors-chan)]
       (is (nil? (:stop out-ctx)))
       (is (nil? (:exception out-ctx)))
-      (assert-no-problems out-ctx [])
+      (assert-no-problems-2 errors {})
       (testing "inserts values for columns not in the first element of a type"
         (let [mail-only-precinct (first
                                   (korma/select (get-in out-ctx [:tables :precincts])
@@ -148,14 +165,21 @@
 
 (deftest validate-no-duplicated-ids-test
   (testing "returns an error when there is a duplicated id"
-    (let [ctx (merge {:input (xml-input "duplicated-ids.xml")
+    (let [errors-chan (a/chan 100)
+          ctx (merge {:input (xml-input "duplicated-ids.xml")
                       :data-specs v3-0/data-specs
+                      :errors-chan errors-chan
                       :pipeline [load-xml db/validate-no-duplicated-ids]}
                      (sqlite/temp-db "duplicated-ids" "3.0"))
-          out-ctx (pipeline/run-pipeline ctx)]
+          out-ctx (pipeline/run-pipeline ctx)
+          errors (all-errors errors-chan)
+          duplicate-id-errors (matching-errors errors
+                                               {:severity :errors
+                                                :scope :import
+                                                :identifier 101
+                                                :error-type :duplicate-ids})]
       (is (= #{"precincts" "localities"}
-             (set (get-in out-ctx [:errors :import 101 :duplicate-ids]))))
-      (assert-error-format out-ctx))))
+             (apply set (map :error-value duplicate-id-errors)))))))
 
 (deftest validate-no-duplicated-rows-test
   (testing "returns a warning if two nodes have the same data"

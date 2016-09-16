@@ -1,7 +1,8 @@
 (ns vip.data-processor.validation.v5.candidate
   (:require [korma.core :as korma]
             [vip.data-processor.db.postgres :as postgres]
-            [vip.data-processor.validation.v5.util :as util]))
+            [vip.data-processor.validation.v5.util :as util]
+            [vip.data-processor.errors :as errors]))
 
 (defn valid-pre-election-status? [status]
   (#{"filed" "qualified" "withdrawn" "write-in"} (:value status)))
@@ -16,9 +17,9 @@
                                  :simple_path (postgres/path->ltree "VipObject.Candidate.PreElectionStatus")}))
         invalid-statuses (remove valid-pre-election-status? statuses)]
     (reduce (fn [ctx row]
-              (update-in ctx
-                         [:errors :candidates (-> row :path .getValue) :format]
-                         conj (:value row)))
+              (errors/add-errors ctx
+                         :errors :candidates (-> row :path .getValue) :format
+                         (:value row)))
             ctx invalid-statuses)))
 
 (defn validate-post-election-statuses [{:keys [import-id] :as ctx}]
@@ -27,9 +28,9 @@
                                  :simple_path (postgres/path->ltree "VipObject.Candidate.PostElectionStatus")}))
         invalid-statuses (remove valid-post-election-status? statuses)]
     (reduce (fn [ctx row]
-              (update-in ctx
-                         [:errors :candidates (-> row :path .getValue) :format]
-                         conj (:value row)))
+              (errors/add-errors ctx
+                                 :errors :candidates (-> row :path .getValue) :format
+                                 (:value row)))
             ctx invalid-statuses)))
 
 (def validate-no-missing-ballot-names

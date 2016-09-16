@@ -2,7 +2,9 @@
   (:require [korma.core :as korma]
             [vip.data-processor.db.postgres :as postgres]
             [vip.data-processor.validation.xml.spec :as spec]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.tools.logging :as log]
+            [vip.data-processor.errors :as errors]))
 
 (defn two-import-ids
   "A common params-fn for build-xml-tree-value-query-validator that
@@ -23,8 +25,8 @@
       (->> missing-paths
            (map :path)
            (reduce (fn [ctx path]
-                     (update-in ctx [severity scope (.getValue path) error-type]
-                                conj error-data))
+                     (errors/add-errors ctx severity scope (.getValue path) error-type
+                                        error-data))
                    ctx)))))
 
 (defn select-lquery
@@ -165,9 +167,9 @@
             elements (elements-at-simple-path import-id simple-path)
             invalid-elements (remove (comp valid? :value) elements)]
         (reduce (fn [ctx row]
-                  (update-in ctx [error-severity error-root-element
-                                  (-> row :path .getValue) error-type]
-                             conj (:value row)))
+                  (errors/add-errors ctx error-severity error-root-element
+                                     (-> row :path .getValue) error-type
+                                     (:value row)))
                 ctx invalid-elements)))))
 
 (defn validate-elements
@@ -182,6 +184,7 @@
           xml-element-path (mapv keyword->xml-name element-path)
           validators (element-validators xml-schema-type xml-element-path valid?
                                          error-severity error-type)]
+      (log/info "Validating" xml-schema-type "elements")
       (reduce (fn [ctx validator] (validator ctx)) ctx validators))))
 
 (defn validate-enum-elements

@@ -1,5 +1,6 @@
 (ns vip.data-processor.validation.v5.hours-open
-  (:require [vip.data-processor.validation.v5.util :as util]))
+  (:require [vip.data-processor.validation.v5.util :as util]
+            [vip.data-processor.errors :as errors]))
 
 (defn valid-time-with-zone? [time]
   (re-matches
@@ -13,7 +14,7 @@
                (str hours-open-path ".StartTime|EndTime.*{1}"))
         invalid-times (remove (comp valid-time-with-zone? :value) times)]
     (reduce (fn [ctx row]
-              (update-in ctx
-                         [:errors :hours-open (-> row :path .getValue) :format]
-                         conj (:value row)))
+              (errors/add-errors ctx
+                         :errors :hours-open (-> row :path .getValue) :format
+                         (:value row)))
             ctx invalid-times)))

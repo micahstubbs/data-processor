@@ -1,7 +1,8 @@
 (ns vip.data-processor.validation.v5.election
   (:require [korma.core :as korma]
             [vip.data-processor.db.postgres :as postgres]
-            [vip.data-processor.validation.v5.util :as util]))
+            [vip.data-processor.validation.v5.util :as util]
+            [vip.data-processor.errors :as errors]))
 
 (defn validate-one-election [{:keys [import-id] :as ctx}]
   (let [result (korma/exec-raw
@@ -15,8 +16,8 @@
                            first
                            :election_count)]
     (if (> election-count 1)
-      (update-in ctx [:fatal :election "VipObject.0.Election" :count]
-                 conj :more-than-one)
+      (errors/add-errors ctx :fatal :election "VipObject.0.Election" :count
+                         :more-than-one)
       ctx)))
 
 (def validate-date
