@@ -18,6 +18,7 @@
   context) which returns a vector of params for the query."
   [severity scope error-type error-data query params-fn]
   (fn [{:keys [import-id] :as ctx}]
+    (log/info "Validating" severity scope error-type)
     (let [missing-paths (korma/exec-raw
                          (:conn postgres/xml-tree-values)
                          [query (params-fn ctx)]

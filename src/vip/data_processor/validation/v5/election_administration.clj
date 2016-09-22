@@ -2,7 +2,8 @@
   (:require [korma.core :as korma]
             [vip.data-processor.db.postgres :as postgres]
             [vip.data-processor.validation.v5.util :as util]
-            [vip.data-processor.errors :as errors]))
+            [vip.data-processor.errors :as errors]
+            [clojure.tools.logging :as log]))
 
 (def validate-no-missing-departments
   (util/build-xml-tree-value-query-validator
@@ -24,6 +25,7 @@
   (voter-service-types voter-service-type))
 
 (defn validate-voter-service-type-format [{:keys [import-id] :as ctx}]
+  (log/info "Validating VoterService/Type elements")
   (let [voter-service-type-simple-path (postgres/path->ltree
                                         "VipObject.ElectionAdministration.Department.VoterService.Type")
         imported-voter-service-types (korma/select postgres/xml-tree-values
