@@ -45,7 +45,7 @@
         {valid-files false invalid-files true} (group-by invalid-fn files)
         ctx (assoc ctx :input valid-files)]
     (if (seq invalid-files)
-      (errors/add-errors :warnings :import :global :invalid-extensions
+      (errors/add-errors ctx :warnings :import :global :invalid-extensions
                          (map #(.getName %) invalid-files))
       ctx)))
 
