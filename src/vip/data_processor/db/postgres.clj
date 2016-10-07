@@ -303,3 +303,32 @@
 
 (defn column-names [table]
   (map :column_name (columns table)))
+
+(defn lazy-select-xml-tree-values [chunk-size import-id]
+  (binding [db/*current-conn* (db/get-connection (:db xml-tree-values))]
+    (let [cursor-name (str (gensym "xtv_cursor"))]
+      (korma/exec-raw
+                      [(str "DECLARE " cursor-name " CURSOR "
+                            "WITH HOLD FOR "
+                            "SELECT * FROM xml_tree_values "
+                            "WHERE results_id=" import-id " "
+                            "ORDER BY insert_counter ASC;")])
+      (letfn [(chunked-rows []
+                (try
+                  (do
+                    (let [this-chunk (korma/exec-raw
+                                      [(str "FETCH " chunk-size
+                                            " FROM " cursor-name)]
+                                      :results)]
+                      (if (seq this-chunk)
+                        (do
+                          (lazy-cat
+                           this-chunk
+                           (chunked-rows)))
+                        (do
+                          (korma/exec-raw
+                           [(str "CLOSE " cursor-name)])
+                          nil))))
+                  (catch java.sql.SQLException e
+                    (chunked-rows))))]
+        (chunked-rows)))))
