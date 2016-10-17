@@ -1,6 +1,7 @@
 (ns vip.data-processor.db.postgres-test
   (:require [vip.data-processor.db.postgres :refer :all]
-            [clojure.test :refer :all]))
+            [clojure.test :refer :all])
+  (:import [java.net URLDecoder]))
 
 (deftest build-public-id-test
   (testing "builds public ids with as much information as it has"
@@ -25,6 +26,13 @@
     (is (= "invalid-4" (build-public-id nil nil nil 4)))
     (is (= "invalid-4" (build-public-id "" nil "" 4)))))
 
+(deftest generate-public-id-test
+  (testing "public ids, being used in URLs, are encoded properly"
+    (is (= "2016-11-08-federal-Pima County, Arizona-508"
+           (generate-public-id {:date "2016-11-08"
+                                :election-type "federal"
+                                :state "Pima County, Arizona"
+                                :import-id "508"})))))
 (deftest coerce-identifier-test
   (testing "coerces valid identifiers"
     (is (= global-identifier (coerce-identifier :global)))

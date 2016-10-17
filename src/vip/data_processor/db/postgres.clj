@@ -10,7 +10,8 @@
             [vip.data-processor.util :as util]
             [vip.data-processor.validation.data-spec :as data-spec]
             [clojure.set :as set])
-  (:import [org.postgresql.util PGobject]))
+  (:import [org.postgresql.util PGobject]
+           [java.net URLEncoder]))
 
 (defn url []
   (let [{:keys [host port user password database]} (config [:postgres])]
@@ -180,7 +181,8 @@
     "5.1" (get-xml-tree-public-id-data ctx)
     {}))
 
-(defn generate-public-id [ctx]
+(defn generate-public-id
+  [ctx]
   (let [{:keys [date election-type state import-id]} (get-public-id-data ctx)]
     (build-public-id date election-type state import-id)))
 
