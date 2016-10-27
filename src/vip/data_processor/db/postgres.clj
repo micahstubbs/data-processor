@@ -308,7 +308,7 @@
   (binding [db/*current-conn* (db/get-connection (:db xml-tree-values))]
     (let [cursor-name (str (gensym "xtv_cursor"))]
       (korma/exec-raw
-                      [(str "DECLARE " cursor-name " CURSOR "
+                      [(str "DECLARE " cursor-name " NO SCROLL CURSOR "
                             "WITH HOLD FOR "
                             "SELECT * FROM xml_tree_values "
                             "WHERE results_id=" import-id " "
