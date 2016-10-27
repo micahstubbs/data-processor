@@ -306,7 +306,9 @@
 
 (defn lazy-select-xml-tree-values [chunk-size import-id]
   (binding [db/*current-conn* (db/get-connection (:db xml-tree-values))]
-    (let [cursor-name (str (gensym "xtv_cursor"))]
+    (let [cursor-name (str (gensym "xtv_cursor"))
+          done? (atom false)
+          close-attempts (atom 0)]
       (korma/exec-raw
                       [(str "DECLARE " cursor-name " NO SCROLL CURSOR "
                             "WITH HOLD FOR "
@@ -314,6 +316,8 @@
                             "WHERE results_id=" import-id " "
                             "ORDER BY insert_counter ASC;")])
       (letfn [(chunked-rows []
+                (when @done?
+                  (swap! close-attempts inc))
                 (try
                   (do
                     (let [this-chunk (korma/exec-raw
@@ -324,11 +328,16 @@
                         (do
                           (lazy-cat
                            this-chunk
-                           (chunked-rows)))
+                           (trampoline chunked-rows)))
                         (do
+                          (reset! done? true)
                           (korma/exec-raw
                            [(str "CLOSE " cursor-name)])
                           nil))))
                   (catch java.sql.SQLException e
-                    (chunked-rows))))]
+                    (if (> @close-attempts 30)
+                      (do
+                        (log/error "Tried to close cursor" cursor-name "too many times")
+                        nil)
+                      chunked-rows))))]
         (chunked-rows)))))
