@@ -12,7 +12,7 @@
                             ctx
                             psql/validations
                             (map psql/validation-value errors)))
-                         500
+                         10000
                          5000
                          (partial stats/store-stats ctx))]
     (assoc ctx :processing-chan processing-chan)))
@@ -25,7 +25,7 @@
                             ctx
                             psql/xml-tree-validations
                             (map psql/xml-tree-validation-value errors)))
-                         500
+                         10000
                          5000
                          (partial tree-stats/store-tree-stats ctx))]
     (assoc ctx :processing-chan processing-chan)))
