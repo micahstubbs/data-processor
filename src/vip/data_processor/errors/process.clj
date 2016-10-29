@@ -5,7 +5,7 @@
             [vip.data-processor.db.tree-statistics :as tree-stats]))
 
 (defn process-v3-validations [{:keys [errors-chan] :as ctx}]
-  (let [processing-chan (util-async/batch-process
+  (let [processing-chan (util-async/bounded-batch-process
                          errors-chan
                          (fn [errors]
                            (psql/bulk-import
@@ -14,11 +14,12 @@
                             (map psql/validation-value errors)))
                          10000
                          5000
+                         30
                          (partial stats/store-stats ctx))]
     (assoc ctx :processing-chan processing-chan)))
 
 (defn process-v5-validations [{:keys [errors-chan] :as ctx}]
-  (let [processing-chan (util-async/batch-process
+  (let [processing-chan (util-async/bounded-batch-process
                          errors-chan
                          (fn [errors]
                            (psql/bulk-import
@@ -27,5 +28,6 @@
                             (map psql/xml-tree-validation-value errors)))
                          10000
                          5000
+                         30
                          (partial tree-stats/store-tree-stats ctx))]
     (assoc ctx :processing-chan processing-chan)))
