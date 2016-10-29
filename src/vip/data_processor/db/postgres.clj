@@ -340,4 +340,4 @@
                         (log/error "Tried to close cursor" cursor-name "too many times")
                         nil)
                       chunked-rows))))]
-        (chunked-rows)))))
+        (trampoline chunked-rows)))))
