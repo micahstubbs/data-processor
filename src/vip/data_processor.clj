@@ -61,6 +61,7 @@
            psql/store-spec-version
            psql/store-public-id
            psql/store-election-id
+           psql/analyze-xtv
            add-validations
            errors/close-errors-chan
            errors/await-statistics
