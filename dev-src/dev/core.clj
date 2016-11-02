@@ -24,10 +24,10 @@
    zip/extracted-contents
    t/remove-invalid-extensions
    t/xml-csv-branch
+   psql/analyze-xtv
    psql/store-spec-version
    psql/store-public-id
    psql/store-election-id
-   psql/analyze-xtv
    data-processor/add-validations
    errors/close-errors-chan
    errors/await-statistics])
