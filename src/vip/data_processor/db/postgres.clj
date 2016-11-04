@@ -101,11 +101,20 @@
                     " ~ '" path "'"))))
 
 (defn find-value-for-simple-path [import-id simple-path]
-  (-> xml-tree-values
-      (korma/select
+  (-> (korma/select xml-tree-values
         (korma/fields :value)
         (korma/where {:results_id import-id
                       :simple_path (path->ltree simple-path)}))
+      first
+      :value))
+
+(defn find-single-xml-tree-value [results-id path]
+  (-> (korma/select xml-tree-values
+        (korma/fields :value)
+        (korma/where {:results_id results-id})
+        (korma/where (ltree-match xml-tree-values
+                                  :path
+                                  path)))
       first
       :value))
 
@@ -149,26 +158,16 @@
      :state state
      :import-id import-id}))
 
-(defn find-single-xml-tree-value [results-id path]
-  (-> (korma/select xml-tree-values
-        (korma/fields :value)
-        (korma/where {:results_id results-id})
-        (korma/where (ltree-match xml-tree-values
-                                  :path
-                                  path)))
-      first
-      :value))
-
 (defn get-xml-tree-public-id-data [{:keys [import-id] :as ctx}]
-  (let [state (find-single-xml-tree-value
+  (let [state (find-value-for-simple-path
                import-id
-               "VipObject.0.State.*{1}.Name.*{1}")
-        date (find-single-xml-tree-value
+               "VipObject.State.Name")
+        date (find-value-for-simple-path
               import-id
-              "VipObject.0.Election.*{1}.Date.*{1}")
-        election-type (find-single-xml-tree-value
+              "VipObject.Election.Date")
+        election-type (find-value-for-simple-path
                        import-id
-                       "VipObject.0.Election.*{1}.ElectionType.*{1}.Text.*{1}")]
+                       "VipObject.Election.ElectionType.Text")]
     {:date date
      :election-type election-type
      :state state
@@ -182,15 +181,18 @@
 
 (defn generate-public-id [ctx]
   (let [{:keys [date election-type state import-id]} (get-public-id-data ctx)]
+    (log/info "Building public id")
     (build-public-id date election-type state import-id)))
 
 (defn generate-election-id [ctx]
+  (log/info "Building election id")
   (let [{:keys [date election-type state]} (get-public-id-data ctx)]
     (build-election-id date election-type state)))
 
 (defn store-public-id [ctx]
   (let [id (:import-id ctx)
         public-id (generate-public-id ctx)]
+    (log/info "Storing public id")
     (korma/update results
                   (korma/set-fields {:public_id public-id})
                   (korma/where {:id id}))
@@ -207,6 +209,7 @@
 (defn store-election-id [ctx]
   (if-let [election-id (generate-election-id ctx)]
     (let [id (:import-id ctx)]
+      (log/info "Storing election id")
       (save-election-id! election-id)
       (korma/update results
                     (korma/set-fields {:election_id election-id})
@@ -216,6 +219,7 @@
 
 (defn store-spec-version [{:keys [spec-version import-id] :as ctx}]
   (when @spec-version
+    (log/info "Storing spec-verion," @spec-version)
     (korma/update results
       (korma/set-fields {:spec_version @spec-version})
       (korma/where {:id import-id})))
